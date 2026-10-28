@@ -248,4 +248,6 @@ def settings():
 
 
 if __name__ == "__main__":
-    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
+    # BUDGET_HOST=0.0.0.0 leidžia atidaryti programėlę telefonu per namų Wi-Fi.
+    app.run(host=os.environ.get("BUDGET_HOST", "127.0.0.1"),
+            debug=os.environ.get("FLASK_DEBUG") == "1")

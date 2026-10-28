@@ -16,6 +16,18 @@ python app.py
 
 Atidarykite <http://127.0.0.1:5000>.
 
+### Atidarymas telefonu
+
+Kompiuteryje ir telefone turi būti tas pats namų Wi-Fi.
+
+```bash
+BUDGET_HOST=0.0.0.0 python app.py          # Windows (PowerShell): $env:BUDGET_HOST="0.0.0.0"; python app.py
+```
+
+Sužinokite kompiuterio vietinį IP (pvz. `192.168.1.25`) ir telefone atidarykite
+`http://192.168.1.25:5000`. Programėlė neturi prisijungimo, todėl taip leiskite
+tik namų tinkle, ne viešame Wi-Fi.
+
 ## Naudojimas
 
 1. Swedbank internetinėje bankininkystėje eksportuokite sąskaitos išrašą CSV formatu
