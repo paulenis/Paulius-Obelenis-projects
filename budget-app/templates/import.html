@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Įkelti Swedbank išrašą</h1>
+<form method="post" enctype="multipart/form-data" class="card">
+  <p>Swedbank internetinėje bankininkystėje: <em>Sąskaitos → Išrašas → Eksportuoti → CSV</em>.
+     Galite įkelti kelis failus iš karto (savo, žmonos, kredito kortelės).</p>
+  <input type="file" name="files" accept=".csv,.xls,.txt" multiple required>
+  <button type="submit">Įkelti</button>
+</form>
+<div class="card muted">
+  <ul>
+    <li>Jau įkelti sandoriai praleidžiami, todėl galima kelti persidengiančius laikotarpius.</li>
+    <li>Kortelės pirkiniai priskiriami tikrajai pirkinio datai, net jei nurašyti vėliau.</li>
+    <li>Kredito padengimas ir pervedimai tarp savų sąskaitų žymimi kaip <b>pervedimai</b> ir į sumas neįeina.</li>
+  </ul>
+</div>
+{% endblock %}

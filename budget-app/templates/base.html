@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Šeimos biudžetas{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <nav>
+      <strong>Šeimos biudžetas</strong>
+      <a href="{{ url_for('dashboard') }}">Suvestinė</a>
+      <a href="{{ url_for('transactions') }}">Sandoriai</a>
+      <a href="{{ url_for('import_view') }}">Įkelti išrašą</a>
+      <a href="{{ url_for('settings') }}">Nustatymai</a>
+    </nav>
+  </header>
+  <main>
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

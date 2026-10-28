@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Nustatymai</h1>
+
+<section class="card">
+  <h2>Šeimos nariai</h2>
+  <p class="muted">Vardai ir pavardės, kaip jie rodomi išraše (pvz. <code>Paulius Obelenis, Vardenė Pavardenė</code>).
+     Pervedimai šiems žmonėms ir iš jų laikomi vidiniais ir į pajamas ar išlaidas neįskaičiuojami.</p>
+  <form method="post">
+    <input type="hidden" name="action" value="household">
+    <input name="household_names" value="{{ household }}" size="60">
+    <button type="submit">Išsaugoti</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Sąskaitos</h2>
+  {% if accounts %}
+  <form method="post">
+    <input type="hidden" name="action" value="accounts">
+    <div class="table-wrap">
+    <table>
+      <tr><th>IBAN</th><th>Pavadinimas</th><th>Savininkas</th><th>Tipas</th><th class="num">Sandorių</th></tr>
+      {% for a in accounts %}
+      <tr>
+        <td><code>{{ a['iban'] }}</code></td>
+        <td><input name="label_{{ a['iban'] }}" value="{{ a['label'] }}" placeholder="pvz. Kredito kortelė"></td>
+        <td><input name="owner_{{ a['iban'] }}" value="{{ a['owner'] }}" placeholder="pvz. Paulius"></td>
+        <td><select name="kind_{{ a['iban'] }}">
+          <option value="einamoji" {% if a['kind'] == 'einamoji' %}selected{% endif %}>Einamoji</option>
+          <option value="kredito" {% if a['kind'] == 'kredito' %}selected{% endif %}>Kredito kortelė</option>
+          <option value="bendra" {% if a['kind'] == 'bendra' %}selected{% endif %}>Bendra</option>
+        </select></td>
+        <td class="num">{{ a['n'] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    <button type="submit">Išsaugoti</button>
+  </form>
+  {% else %}<p>Sąskaitos atsiras įkėlus pirmą išrašą.</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Taisyklės</h2>
+  <p class="muted">Jei gavėjo pavadinime ar aprašyme yra tekstas, sandoriui priskiriamas tipas ir (ar) kategorija.
+     Jūsų taisyklės svarbesnės už įtaisytas.</p>
+  <table>
+    <tr><th>Tekstas</th><th>Tipas</th><th>Kategorija</th><th></th></tr>
+    {% for r in rules %}
+    <tr>
+      <td>{{ r['pattern'] }}</td><td>{{ KIND_LABELS.get(r['kind'], '—') }}</td><td>{{ r['category'] or '—' }}</td>
+      <td><form method="post"><input type="hidden" name="action" value="delete_rule">
+        <input type="hidden" name="rule_id" value="{{ r['id'] }}"><button type="submit" class="link">ištrinti</button></form></td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td><input form="add-rule" name="pattern" placeholder="pvz. VOVERIUKU" required></td>
+      <td><select form="add-rule" name="kind"><option value="">—</option>
+        {% for k, label in KIND_LABELS.items() %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select></td>
+      <td><input form="add-rule" name="category" list="categories" placeholder="kategorija"></td>
+      <td><button form="add-rule" type="submit">Pridėti</button></td>
+    </tr>
+  </table>
+  <form method="post" id="add-rule"><input type="hidden" name="action" value="add_rule"></form>
+  <datalist id="categories">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
+</section>
+{% endblock %}
