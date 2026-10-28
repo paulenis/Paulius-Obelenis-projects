@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Go or No Go</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;600;800&display=swap">
+<style>
+/* Layout: one-screen arcade cabinet — scoreboard strip on top, 3x3 field of sockets, overlay for start / game over. */
+:root {
+  --ink: #141a33;        /* cabinet background */
+  --panel: #1d2547;      /* socket wells */
+  --rim: #2c3766;        /* socket rims, borders */
+  --text: #eef0ff;
+  --muted: #9aa3d4;
+  --go: #2fd16f;         /* green button */
+  --go-deep: #17924a;
+  --stop: #ff4b4b;       /* red button */
+  --stop-deep: #b81f2c;
+  --gold: #ffd23f;       /* score highlight */
+  --font-display: "Bungee", "Impact", system-ui, sans-serif;
+  --font-body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: radial-gradient(120% 80% at 50% 0%, #222b57 0%, var(--ink) 60%);
+  background-color: var(--ink);
+  color: var(--text);
+  font-family: var(--font-body);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  max-width: 520px;
+  margin: 0 auto;
+}
+.hud {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 2px solid var(--rim);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.stat:nth-child(2) { align-items: center; }
+.stat:nth-child(3) { align-items: flex-end; }
+.label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.value {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+#score { color: var(--gold); }
+.lives { display: flex; gap: 4px; height: 1.6rem; align-items: center; }
+.life { width: 14px; height: 14px; border-radius: 50%; background: var(--go); box-shadow: 0 0 8px var(--go); transition: background .2s, box-shadow .2s; }
+.life.lost { background: var(--rim); box-shadow: none; }
+
+.message {
+  min-height: 1.4em;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.message.good { color: var(--go); }
+.message.bad { color: var(--stop); }
+
+.field-wrap { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.field {
+  width: min(100%, 60vh);
+  aspect-ratio: 1;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 14px;
+  border-radius: 24px;
+  background: var(--panel);
+  border: 2px solid var(--rim);
+}
+.field.shake { animation: shake .35s; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(9px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(4px); }
+}
+.socket {
+  position: relative;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: inset 0 4px 10px rgba(0,0,0,.55);
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.socket:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.btn {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: pop-in .14s ease-out;
+}
+.btn.go   { background: radial-gradient(circle at 35% 30%, #7dffb0, var(--go) 45%, var(--go-deep)); box-shadow: 0 6px 0 #0d5f30, 0 0 22px rgba(47,209,111,.55); }
+.btn.stop { background: radial-gradient(circle at 35% 30%, #ff9a9a, var(--stop) 45%, var(--stop-deep)); box-shadow: 0 6px 0 #7a1019, 0 0 22px rgba(255,75,75,.5); }
+.btn.stop::after {
+  content: "";
+  position: absolute;
+  inset: 30%;
+  border-radius: 50%;
+  border: 5px solid rgba(255,255,255,.85);
+  background: linear-gradient(45deg, transparent 44%, rgba(255,255,255,.85) 44% 56%, transparent 56%);
+}
+.timer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.timer svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.timer circle { fill: none; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 289; stroke-dashoffset: 0; animation: drain var(--life) linear forwards; }
+.btn.go + .timer circle { stroke: var(--go); }
+.btn.stop + .timer circle { stroke: var(--stop); opacity: .6; }
+@keyframes drain { to { stroke-dashoffset: 289; } }
+@keyframes pop-in { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.btn.hit { animation: hit .18s ease-in forwards; }
+@keyframes hit { to { transform: scale(1.35); opacity: 0; } }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: rgba(14, 18, 38, .86);
+  backdrop-filter: blur(4px);
+  z-index: 5;
+}
+.card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px 24px;
+  border-radius: 24px;
+  background: var(--panel);
+  border: 2px solid var(--rim);
+  text-align: center;
+}
+.card h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2.4rem;
+  line-height: 1;
+  text-wrap: balance;
+}
+.card h1 .g { color: var(--go); }
+.card h1 .r { color: var(--stop); }
+.rules { display: grid; gap: 10px; text-align: left; margin: 0; padding: 0; list-style: none; font-size: 1rem; line-height: 1.4; }
+.rules li { display: flex; gap: 12px; align-items: center; }
+.dot { flex: none; width: 28px; height: 28px; border-radius: 50%; }
+.dot.go { background: var(--go); }
+.dot.stop { background: var(--stop); }
+.dot.ring { background: transparent; border: 3px solid var(--muted); }
+.result { font-family: var(--font-display); font-size: 3.4rem; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
+.sub { color: var(--muted); margin: 0; }
+.play {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  padding: 16px;
+  border: 0;
+  border-radius: 16px;
+  color: #06331a;
+  background: var(--go);
+  box-shadow: 0 6px 0 var(--go-deep);
+  cursor: pointer;
+}
+.play:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--go-deep); }
+.play:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .field.shake, .btn, .btn.hit { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hud">
+    <div class="stat"><span class="label">Score</span><span class="value" id="score">0</span></div>
+    <div class="stat"><span class="label">Lives</span><span class="lives" id="lives"></span></div>
+    <div class="stat"><span class="label">Best</span><span class="value" id="best">0</span></div>
+  </div>
+  <div class="message" id="message">Level 1</div>
+  <div class="field-wrap">
+    <div class="field" id="field"></div>
+  </div>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="card">
+    <h1><span class="g">Go</span> or <span class="r">No&nbsp;Go</span></h1>
+    <ul class="rules">
+      <li><span class="dot go"></span>Tap green buttons before they fade.</li>
+      <li><span class="dot stop"></span>Never tap red. It costs a life.</li>
+      <li><span class="dot ring"></span>A missed green also costs a life. You have 3.</li>
+    </ul>
+    <button class="play" id="startBtn" type="button">Play</button>
+  </div>
+</div>
+
+<div class="overlay" id="overScreen" hidden>
+  <div class="card">
+    <h1>Game over</h1>
+    <div class="result" id="finalScore">0</div>
+    <p class="sub" id="finalNote">Best: 0</p>
+    <button class="play" id="againBtn" type="button">Play again</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const SLOTS = 9, MAX_LIVES = 3;
+  const field = document.getElementById('field');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const livesEl = document.getElementById('lives');
+  const msgEl = document.getElementById('message');
+  const startScreen = document.getElementById('startScreen');
+  const overScreen = document.getElementById('overScreen');
+
+  let score = 0, lives = MAX_LIVES, running = false, spawnTimer = null, best = 0;
+  const slots = []; // { el, kind: 'go'|'stop'|null, timer }
+
+  try { best = parseInt(localStorage.getItem('goNoGoBest') || '0', 10) || 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  for (let i = 0; i < SLOTS; i++) {
+    const el = document.createElement('button');
+    el.className = 'socket';
+    el.type = 'button';
+    el.setAttribute('aria-label', 'Empty socket');
+    el.addEventListener('pointerdown', (e) => { e.preventDefault(); tap(i); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(i); } });
+    field.appendChild(el);
+    slots.push({ el, kind: null, timer: null });
+  }
+
+  function level() { return Math.floor(score / 10) + 1; }
+  // Difficulty: spawns get faster and buttons live shorter as level climbs.
+  function spawnDelay() { return Math.max(350, 900 - (level() - 1) * 70); }
+  function lifetime() { return Math.max(600, 1500 - (level() - 1) * 110); }
+  function redChance() { return Math.min(0.5, 0.3 + (level() - 1) * 0.03); }
+
+  function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+  function renderLives() {
+    livesEl.innerHTML = '';
+    for (let i = 0; i < MAX_LIVES; i++) {
+      const d = document.createElement('span');
+      d.className = 'life' + (i >= lives ? ' lost' : '');
+      livesEl.appendChild(d);
+    }
+  }
+
+  let msgTimer = null;
+  function say(text, tone) {
+    msgEl.textContent = text;
+    msgEl.className = 'message' + (tone ? ' ' + tone : '');
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(() => { msgEl.textContent = 'Level ' + level(); msgEl.className = 'message'; }, 700);
+  }
+
+  function clearSlot(i, hit) {
+    const s = slots[i];
+    clearTimeout(s.timer);
+    s.timer = null;
+    s.kind = null;
+    s.el.setAttribute('aria-label', 'Empty socket');
+    const btn = s.el.querySelector('.btn');
+    if (hit && btn) {
+      btn.classList.add('hit');
+      const timer = s.el.querySelector('.timer');
+      if (timer) timer.remove();
+      setTimeout(() => { if (!slots[i].kind) s.el.innerHTML = ''; }, 180);
+    } else {
+      s.el.innerHTML = '';
+    }
+  }
+
+  function spawn() {
+    if (!running) return;
+    const free = slots.map((s, i) => s.kind ? -1 : i).filter(i => i >= 0);
+    if (free.length) {
+      const i = free[Math.floor(Math.random() * free.length)];
+      const kind = Math.random() < redChance() ? 'stop' : 'go';
+      const life = lifetime() * (kind === 'stop' ? 1.2 : 1);
+      const s = slots[i];
+      s.kind = kind;
+      s.el.setAttribute('aria-label', kind === 'go' ? 'Green button, tap it' : 'Red button, do not tap');
+      s.el.innerHTML = '<span class="btn ' + kind + '"></span><span class="timer" style="--life:' + life + 'ms"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46"></circle></svg></span>';
+      s.timer = setTimeout(() => expire(i), life);
+    }
+    spawnTimer = setTimeout(spawn, spawnDelay() * (0.75 + Math.random() * 0.5));
+  }
+
+  function expire(i) {
+    const kind = slots[i].kind;
+    clearSlot(i, false);
+    if (kind === 'go' && running) loseLife('Too slow!');
+  }
+
+  function tap(i) {
+    if (!running) return;
+    const kind = slots[i].kind;
+    if (kind === 'go') {
+      const before = level();
+      score++;
+      scoreEl.textContent = score;
+      clearSlot(i, true);
+      buzz(15);
+      if (level() > before) say('Level ' + level() + '!', 'good');
+    } else if (kind === 'stop') {
+      clearSlot(i, true);
+      loseLife('Not red!');
+    }
+  }
+
+  function loseLife(text) {
+    lives--;
+    renderLives();
+    buzz([60, 40, 60]);
+    say(text, 'bad');
+    field.classList.remove('shake');
+    void field.offsetWidth;
+    field.classList.add('shake');
+    if (lives <= 0) endGame();
+  }
+
+  function startGame() {
+    score = 0; lives = MAX_LIVES; running = true;
+    scoreEl.textContent = '0';
+    renderLives();
+    slots.forEach((_, i) => clearSlot(i, false));
+    msgEl.textContent = 'Level 1'; msgEl.className = 'message';
+    startScreen.hidden = true;
+    overScreen.hidden = true;
+    clearTimeout(spawnTimer);
+    spawnTimer = setTimeout(spawn, 500);
+  }
+
+  function endGame() {
+    running = false;
+    clearTimeout(spawnTimer);
+    slots.forEach((_, i) => clearSlot(i, false));
+    const isBest = score > best;
+    if (isBest) {
+      best = score;
+      bestEl.textContent = best;
+      try { localStorage.setItem('goNoGoBest', String(best)); } catch (e) {}
+    }
+    document.getElementById('finalScore').textContent = score;
+    document.getElementById('finalNote').textContent = isBest && score > 0 ? 'New best score!' : 'Best: ' + best;
+    setTimeout(() => { overScreen.hidden = false; document.getElementById('againBtn').focus(); }, 400);
+  }
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('againBtn').addEventListener('click', startGame);
+  renderLives();
+})();
+</script>
+</body>
+</html>
