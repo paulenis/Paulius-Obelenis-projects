@@ -5,6 +5,12 @@ Lidl, Maxima, Iki, Norfa, Rimi (įskaitant kainą už kg/l). Bendravimas su naud
 
 Šaltinių tyrimas (URL, laukai, API): `TYRIMAS.md`.
 
+Sprendimas (2026-10-28): pradžioje **variantas A** – viskas veikia naudotojo kompiuteryje
+(Python surinkimas + vietinis puslapis naršyklėje; šeima gali jungtis per namų Wi-Fi).
+Vėliau galbūt variantas B (GitHub Actions + GitHub Pages + bendras sąrašas Supabase/Firebase),
+todėl kodą rašyti taip, kad surinkimą ir puslapį būtų lengva perkelti.
+Dizaino pavyzdžiai: https://claude.ai/artifact/3CrhAVLJ7zisLPzTGyYxQ2 (A–D).
+
 ## Privalomi atsparumo reikalavimai (naudotojas paprašė įsiminti)
 
 Svetainės keičiasi be įspėjimo – įrankis turi tai išgyventi nuo pirmos versijos:
