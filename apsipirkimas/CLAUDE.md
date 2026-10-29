@@ -11,6 +11,15 @@ Vėliau galbūt variantas B (GitHub Actions + GitHub Pages + bendras sąrašas S
 todėl kodą rašyti taip, kad surinkimą ir puslapį būtų lengva perkelti.
 Dizaino pavyzdžiai: https://claude.ai/artifact/3CrhAVLJ7zisLPzTGyYxQ2 (A–D).
 
+## Naudotojo reikalavimai (2026-10-29)
+
+- **Šviesus / tamsus režimas** su jungikliu programoje (kompiuteryje ir telefone); pasirinkimas įsimenamas.
+- **Telefone** turi būti galima sąrašą **sudaryti** (paieška + pridėti), **peržiūrėti** ir
+  **žymėti nupirktas** prekes (pagrindas – dizainai A ir D).
+- Variante A telefonas mato kompiuterį tik namų Wi-Fi. Parduotuvėje telefonas turi veikti
+  **be ryšio**: puslapis kaip PWA (įsidedamas į pagrindinį ekraną), sąrašas laikomas telefone,
+  pakeitimai susinchronizuojami su kompiuteriu grįžus į namų tinklą.
+
 ## Privalomi atsparumo reikalavimai (naudotojas paprašė įsiminti)
 
 Svetainės keičiasi be įspėjimo – įrankis turi tai išgyventi nuo pirmos versijos:
