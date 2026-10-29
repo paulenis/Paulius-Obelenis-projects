@@ -20,6 +20,16 @@ Dizaino pavyzdžiai: https://claude.ai/artifact/3CrhAVLJ7zisLPzTGyYxQ2 (A–D).
   **be ryšio**: puslapis kaip PWA (įsidedamas į pagrindinį ekraną), sąrašas laikomas telefone,
   pakeitimai susinchronizuojami su kompiuteriu grįžus į namų tinklą.
 
+## Papildomi reikalavimai (2026-10-29, vėliau)
+
+- **Kiekiai:** prie prekės nurodomas kiekis (sveriamoms – kg žingsniu 0,5, kitoms – vnt.),
+  kaina = vieneto kaina × kiekis.
+- **Bendras šeimos sąrašas:** kiti šeimos nariai mato sąrašą ir gali pridėti prekių
+  (rodoma, kas pridėjo).
+- **Draugai:** jei viskas veiks, programa dalinama draugams – kiekviena šeima su savo atskiru sąrašu.
+- Šie du punktai reikalauja, kad sąrašas būtų internete (ne tik namų kompiuteryje) –
+  architektūros sprendimą (A → B) patvirtina naudotojas.
+
 ## Privalomi atsparumo reikalavimai (naudotojas paprašė įsiminti)
 
 Svetainės keičiasi be įspėjimo – įrankis turi tai išgyventi nuo pirmos versijos:
