@@ -40,7 +40,8 @@ tarp tinklų (įskaitant kainą už kg/l). Tinklai: Lidl, Maxima, Iki, Norfa, Ri
   `topPercentage` (tik „-20 % gaminiams X“, be kainos).
 - Leidinys `maxima.lt/leidiniai/...` – iPaper (paveikslėliai), nereikia.
 - **Barbora** (`https://barbora.lt`): pilnas asortimentas. HTML'e `window.b_productList = [...]`
-  (JSON), 52 prekės puslapyje, `?page=N`. Pvz. `https://barbora.lt/akcijos?page=2`.
+  (JSON), 52 prekės puslapyje, `?page=N`. `/akcijos` peradresuoja į
+  `https://barbora.lt/aciu-akcijos?page=N` (~140 psl., ~7 300 prekių; po paskutinio – tuščias sąrašas).
   Laukai: `title`, `price`, `retail_price`, `comparative_unit_price` + `comparative_unit`,
   `promotion` (`type`: `LOYALTY_PRICE`, `X_FOR_Y`; `oldPrice`, `percentage`,
   `loyaltyCardRequired`), `category_name_full_path`. Galiojimo datų nėra.
@@ -58,7 +59,8 @@ tarp tinklų (įskaitant kainą už kg/l). Tinklai: Lidl, Maxima, Iki, Norfa, Ri
    "limit":60,"fromIndex":0}
   ```
   Atsakymas: `{"products":[{"frontEndProduct":{...}}],"count":N}`. IKI: ~14 900 prekių,
-  ~3 800 akcijinių. Laukai: `name`, `prc.p` (įprasta), `prc.s` (akcijos), `prc.l` (su kortele),
+  ~4 400 akcijinių. **API grąžina daugiausia 2000 rezultatų vienai užklausai** – todėl
+  klausiama pagal pagrindines kategorijas (`POST .../categories`, `parentId == "0"`, visos < 2000). Laukai: `name`, `prc.p` (įprasta), `prc.s` (akcijos), `prc.l` (su kortele),
   `prc.still` / `prc.ltill` (galioja iki), `lastMonthLowestPrice`, `conversionMeasure` +
   `conversionValue` (pvz. KG 0.5 → kaina už kg skaičiuojama).
 - Rizika: API gali pasikeisti; kainos internete gali skirtis nuo parduotuvės (nepatikrinta).

@@ -27,8 +27,19 @@ Dizaino pavyzdžiai: https://claude.ai/artifact/3CrhAVLJ7zisLPzTGyYxQ2 (A–D).
 - **Bendras šeimos sąrašas:** kiti šeimos nariai mato sąrašą ir gali pridėti prekių
   (rodoma, kas pridėjo).
 - **Draugai:** jei viskas veiks, programa dalinama draugams – kiekviena šeima su savo atskiru sąrašu.
-- Šie du punktai reikalauja, kad sąrašas būtų internete (ne tik namų kompiuteryje) –
-  architektūros sprendimą (A → B) patvirtina naudotojas.
+- Šie du punktai reikalauja, kad sąrašas būtų internete. Naudotojas nusprendė (2026-10-29):
+  **kol kas lieka variantas A**; jei pasiteisins – pereisime prie B.
+
+## Būsena (2026-10-29): pirma veikianti versija
+
+- Kodas: `kainos/` (Python, tik standartinė biblioteka), `web/` (be karkasų), `tests/`.
+  Paleidimas ir struktūra – `README.md`. Testai: `python3 -m unittest discover -s tests -t .`
+- Renkamos tik **akcijinės** prekės (~15 000). Pilnas asortimentas – galimas kitas žingsnis.
+- Žinomas apribojimas: per `http://` LAN adresą negalima service worker, todėl telefonas
+  be namų Wi-Fi puslapio iš naujo neatidaro – veikia tik jau atidarytas langas (sąrašas
+  localStorage, sinchronizacija grįžus). Sprendimas – variantas B (HTTPS).
+- Pakeitus parduotuvės svetainę: žali failai `data/raw/<tinklas>/`, `python3 -m kainos.collect
+  <tinklas> --reparse`, atnaujinti `tests/fixtures/` ir testų reikšmes.
 
 ## Privalomi atsparumo reikalavimai (naudotojas paprašė įsiminti)
 

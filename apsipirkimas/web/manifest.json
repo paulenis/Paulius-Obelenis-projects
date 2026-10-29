@@ -1,0 +1,10 @@
+{
+  "name": "Pirkinių sąrašas",
+  "short_name": "Pirkiniai",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F3F5F4",
+  "theme_color": "#1F6B45",
+  "lang": "lt",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
