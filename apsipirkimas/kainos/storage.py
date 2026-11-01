@@ -71,6 +71,8 @@ def connect(path=None):
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")  # the app can read while prices are being written
+    conn.execute("PRAGMA busy_timeout=10000")
     conn.executescript(SCHEMA)
     return conn
 

@@ -5,9 +5,12 @@
 """
 
 import argparse
+import errno
 import json
+import os
 import socket
 import threading
+import traceback
 from datetime import date, datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -22,7 +25,7 @@ STALE_AFTER_DAYS = 8
 AUTO_COLLECT_AFTER_DAYS = 6   # collect by itself when the newest data is older than this
 AUTO_CHECK_EVERY_S = 6 * 3600
 
-_conn = None
+_local = threading.local()
 _collect_lock = threading.Lock()
 _collect_state = {"running": False, "log": []}
 
@@ -47,6 +50,13 @@ def chain_status(conn):
     return result
 
 
+def _db():
+    """One SQLite connection per thread: request threads and the collector never share one."""
+    if not hasattr(_local, "conn"):
+        _local.conn = storage.connect()
+    return _local.conn
+
+
 def _run_collect():
     def log(line):
         _collect_state["log"].append(line)
@@ -69,7 +79,7 @@ def start_collect():
 def _auto_collect_loop():
     """Weekly prices without any scheduler: check now and then while the app is running."""
     while True:
-        dates = [s["updated_at"] for s in chain_status(_conn)]
+        dates = [s["updated_at"] for s in chain_status(_db())]
         newest = max((d for d in dates if d), default=None)
         if newest is None or (date.today() - datetime.fromisoformat(newest).date()).days >= AUTO_COLLECT_AFTER_DAYS:
             print("Kainos senesnės nei savaitė – renkamos automatiškai...")
@@ -112,32 +122,96 @@ class Handler(SimpleHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         return json.loads(self.rfile.read(length) or b"{}") if length else {}
 
+    def _safely(self, handler):
+        try:
+            handler()
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            pass  # the browser went away
+        except Exception as e:
+            traceback.print_exc()
+            try:
+                self._json({"error": f"{type(e).__name__}: {e}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            except OSError:
+                pass
+
     def do_GET(self):
+        self._safely(self._get)
+
+    def do_POST(self):
+        self._safely(self._post)
+
+    def _get(self):
         url = urlparse(self.path)
         if url.path == "/api/status":
-            return self._json({"chains": chain_status(_conn), "collecting": _collect_state["running"]})
+            return self._json({"chains": chain_status(_db()), "collecting": _collect_state["running"]})
         if url.path == "/api/search":
             q = parse_qs(url.query).get("q", [""])[0]
-            return self._json({"results": storage.search(_conn, q, today=date.today().isoformat())})
+            return self._json({"results": storage.search(_db(), q, today=date.today().isoformat())})
         if url.path == "/api/list":
-            return self._json({"items": storage.list_items(_conn)})
+            return self._json({"items": storage.list_items(_db())})
         if url.path == "/api/collect":
             return self._json(_collect_state)
         return super().do_GET()
 
-    def do_POST(self):
+    def _post(self):
         url = urlparse(self.path)
         try:
             body = self._body()
         except json.JSONDecodeError:
             return self._json({"error": "netinkamas JSON"}, HTTPStatus.BAD_REQUEST)
         if url.path == "/api/list/sync":
-            storage.merge_list_items(_conn, body.get("items") or [])
-            return self._json({"items": storage.list_items(_conn)})
+            storage.merge_list_items(_db(), body.get("items") or [])
+            return self._json({"items": storage.list_items(_db())})
         if url.path == "/api/collect":
             start_collect()
             return self._json(_collect_state)
         return self._json({"error": "nežinomas adresas"}, HTTPStatus.NOT_FOUND)
+
+
+class Server(ThreadingHTTPServer):
+    """Listens on IPv6 and IPv4 at once, so 'localhost' works whichever one the browser tries.
+
+    The port is taken exclusively: if another program already uses it we get an error and
+    move to the next port, instead of sharing the port and serving empty pages (Windows).
+    """
+    daemon_threads = True
+    allow_reuse_address = os.name != "nt"
+    address_family = socket.AF_INET6
+
+    def server_bind(self):
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        if self.address_family == socket.AF_INET6:
+            self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        super().server_bind()
+
+
+class ServerIPv4(Server):
+    address_family = socket.AF_INET
+
+
+def _port_in_use(error):
+    return error.errno in (errno.EADDRINUSE, errno.EACCES) or getattr(error, "winerror", None) in (10048, 10013)
+
+
+def _bind(port):
+    try:
+        return Server(("::", port), Handler)
+    except OSError as e:
+        if _port_in_use(e):
+            raise
+        return ServerIPv4(("0.0.0.0", port), Handler)  # no IPv6 on this computer
+
+
+def _start_server(first_port, tries=10):
+    for port in range(first_port, first_port + tries):
+        try:
+            return _bind(port), port
+        except OSError as e:
+            if not _port_in_use(e):
+                raise
+            print(f"Prievadas {port} užimtas kitos programos – bandomas {port + 1}.")
+    raise SystemExit(f"Nepavyko rasti laisvo prievado tarp {first_port} ir {first_port + tries - 1}.")
 
 
 def _lan_address():
@@ -150,19 +224,18 @@ def _lan_address():
 
 
 def main(argv=None):
-    global _conn
     parser = argparse.ArgumentParser(description="Paleisti apsipirkimo programą")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--no-auto", action="store_true", help="nerinkti kainų automatiškai")
     args = parser.parse_args(argv)
-    _conn = storage.connect()
+    _db()
+    server, port = _start_server(args.port)
     if not args.no_auto:
         threading.Thread(target=_auto_collect_loop, daemon=True).start()
-    server = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
     lan = _lan_address()
-    print(f"Programa veikia: http://localhost:{args.port}")
+    print(f"Programa veikia: http://localhost:{port}  (arba http://127.0.0.1:{port})")
     if lan:
-        print(f"Telefone (tas pats Wi-Fi): http://{lan}:{args.port}")
+        print(f"Telefone (tas pats Wi-Fi): http://{lan}:{port}")
     print("Sustabdyti: Ctrl+C")
     try:
         server.serve_forever()

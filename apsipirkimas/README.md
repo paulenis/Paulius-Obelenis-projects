@@ -46,6 +46,14 @@ Jei telefonas puslapį uždarys, be namų Wi-Fi jo iš naujo atidaryti nepavyks 
 `http://` adresu naršyklės neleidžia išsaugoti puslapio darbui be ryšio). Tai išsispręs,
 jei vėliau programą perkelsime į internetą.
 
+## Puslapis neatsidaro („ERR_EMPTY_RESPONSE“, „This page isn’t working“)
+
+- Pažiūrėkite į programos langą: jame parašytas tikras adresas. Jei prievadas 8000 užimtas kitos
+  programos, programa pati pasirenka kitą (pvz. `http://localhost:8001`) ir tai parašo.
+- Pabandykite `http://127.0.0.1:8000` vietoj `localhost`.
+- Įsitikinkite, kad paleistas tik vienas programos langas.
+- Jei kas nors nepavyksta, programos lange atsiranda klaidos tekstas – jį galima atsiųsti taisymui.
+
 ## Sertifikatų klaida
 
 Jei rinkimo metu matote `sertifikato klaida` arba `CERTIFICATE_VERIFY_FAILED`, jūsų kompiuteryje
