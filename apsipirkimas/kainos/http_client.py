@@ -1,6 +1,7 @@
 """Small polite HTTP client on the standard library (no extra installs needed)."""
 
 import json
+import ssl
 import time
 import urllib.error
 import urllib.request
@@ -11,8 +12,34 @@ USER_AGENT = (
 )
 
 
+CERT_HELP = (
+    "Kompiuteryje kažkas pakeičia svetainių saugumo sertifikatus – dažniausiai antivirusinė "
+    "programa su „HTTPS tikrinimu“ arba darbo tinklo filtras. Įdiekite paketą, kuris leidžia "
+    "Python naudoti Windows sertifikatus: komandų eilutėje „py -m pip install truststore“, "
+    "tada paleiskite programą iš naujo. Daugiau – README.md, skyrius „Sertifikatų klaida“."
+)
+
+
 class FetchError(Exception):
     pass
+
+
+def _ssl_context():
+    """Trust what the operating system trusts.
+
+    `truststore` (optional, `pip install truststore`) asks Windows / macOS directly, which also
+    covers certificates that antivirus programs and company networks add to the system.
+    Without it Python's own default list is used.
+    """
+    try:
+        import truststore
+        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    except ImportError:
+        return ssl.create_default_context()
+
+
+def _is_cert_error(error):
+    return isinstance(getattr(error, "reason", error), ssl.SSLCertVerificationError)
 
 
 class Client:
@@ -21,6 +48,7 @@ class Client:
         self.timeout = timeout
         self.retries = retries
         self._last = 0.0
+        self._ssl = _ssl_context()
 
     def _wait(self):
         pause = self.delay - (time.monotonic() - self._last)
@@ -40,13 +68,15 @@ class Client:
             self._wait()
             try:
                 req = urllib.request.Request(url, data=body, headers=hdrs)
-                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                with urllib.request.urlopen(req, timeout=self.timeout, context=self._ssl) as resp:
                     return resp.read().decode("utf-8", errors="replace")
             except urllib.error.HTTPError as e:
                 last_error = f"HTTP {e.code} – {url}"
                 if e.code in (403, 404):
                     break  # blocked or gone: retrying will not help
             except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+                if _is_cert_error(e):
+                    raise FetchError(f"sertifikato klaida ({url}). {CERT_HELP}") from e
                 last_error = f"{e} – {url}"
             time.sleep(2 * (attempt + 1))
         raise FetchError(last_error)

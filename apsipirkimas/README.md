@@ -46,6 +46,23 @@ Jei telefonas puslapį uždarys, be namų Wi-Fi jo iš naujo atidaryti nepavyks 
 `http://` adresu naršyklės neleidžia išsaugoti puslapio darbui be ryšio). Tai išsispręs,
 jei vėliau programą perkelsime į internetą.
 
+## Sertifikatų klaida
+
+Jei rinkimo metu matote `sertifikato klaida` arba `CERTIFICATE_VERIFY_FAILED`, jūsų kompiuteryje
+kažkas pakeičia svetainių saugumo sertifikatus. Dažniausiai tai antivirusinė programa su
+„HTTPS / interneto srauto tikrinimu“ (Avast, AVG, ESET, Kaspersky, Bitdefender ir pan.) arba darbo tinklo filtras.
+Naršyklė tokiam sertifikatui pasitiki, o Python – ne.
+
+Sprendimas – leisti Python naudoti Windows sertifikatus. Komandų eilutėje (Win+R → `cmd`):
+
+```
+py -m pip install truststore
+```
+
+Tada paleiskite programą iš naujo. Programa paketą panaudos automatiškai.
+
+**Neišjunkite** sertifikatų tikrinimo kode – tada bet kas tinkle galėtų pakeisti kainų duomenis.
+
 ## Kainų rinkimas atskirai
 
 ```
