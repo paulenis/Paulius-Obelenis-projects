@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+  <h1>Suvestinė</h1>
+  {% if months %}
+  <form method="get">
+    <select name="month" onchange="this.form.submit()">
+      {% for m in months %}<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>{% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</div>
+
+{% if not months %}
+  <div class="card">Duomenų dar nėra. <a href="{{ url_for('import_view') }}">Įkelkite pirmą išrašą.</a></div>
+{% else %}
+<div class="tiles">
+  <div class="tile"><span>Pajamos</span><b class="pos">{{ income|eur }}</b></div>
+  <div class="tile"><span>Išlaidos</span><b class="neg">{{ expense|eur }}</b></div>
+  <div class="tile"><span>Balansas</span><b class="{{ 'pos' if income - expense >= 0 else 'neg' }}">{{ (income - expense)|eur }}</b></div>
+  <div class="tile"><span>Pervedimai (neskaičiuojami)</span>
+    <b><a href="{{ url_for('transactions', month=month, kind='transfer') }}">{{ (transfers['total'] or 0)|eur }}</a></b>
+    <small>{{ transfers['n'] }} vnt.</small></div>
+</div>
+
+<div class="grid">
+  <section class="card">
+    <h2>Išlaidos pagal kategoriją</h2>
+    <table class="bars">
+      {% for r in by_category %}
+      <tr>
+        <td><a href="{{ url_for('transactions', month=month, kind='expense', category=r['category']) }}">{{ r['category'] }}</a></td>
+        <td class="bar-cell"><div class="bar" style="width: {{ (r['total'] / max_category * 100) if max_category > 0 else 0 }}%"></div></td>
+        <td class="num">{{ r['total']|eur }}</td>
+      </tr>
+      {% else %}<tr><td>Išlaidų nėra.</td></tr>{% endfor %}
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Pagal savininką</h2>
+    <table>
+      <tr><th>Savininkas</th><th class="num">Pajamos</th><th class="num">Išlaidos</th></tr>
+      {% for r in by_owner %}
+      <tr><td>{{ r['owner'] }}</td><td class="num pos">{{ r['income']|eur }}</td><td class="num neg">{{ r['expense']|eur }}</td></tr>
+      {% endfor %}
+    </table>
+
+    <h2>Paskutiniai mėnesiai</h2>
+    <table class="bars">
+      {% for r in trend %}
+      <tr>
+        <td><a href="{{ url_for('dashboard', month=r['m']) }}">{{ r['m'] }}</a></td>
+        <td class="bar-cell">
+          <div class="bar inc" style="width: {{ (r['income'] / max_trend * 100) if max_trend > 0 else 0 }}%"></div>
+          <div class="bar" style="width: {{ (r['expense'] / max_trend * 100) if max_trend > 0 else 0 }}%"></div>
+        </td>
+        <td class="num"><span class="pos">{{ r['income']|eur }}</span><br><span class="neg">{{ r['expense']|eur }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </section>
+</div>
+{% endif %}
+{% endblock %}

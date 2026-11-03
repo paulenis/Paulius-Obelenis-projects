@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Sandoriai</h1>
+<form method="get" class="filters">
+  <select name="month"><option value="">Visi mėnesiai</option>
+    {% for m in months %}<option {% if m == filters.month %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
+  <select name="account"><option value="">Visos sąskaitos</option>
+    {% for a in accounts %}<option value="{{ a['iban'] }}" {% if a['iban'] == filters.account %}selected{% endif %}>{{ a['label'] or a['iban'] }}{% if a['owner'] %} ({{ a['owner'] }}){% endif %}</option>{% endfor %}</select>
+  <select name="kind"><option value="">Visi tipai</option>
+    {% for k, label in KIND_LABELS.items() %}<option value="{{ k }}" {% if k == filters.kind %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  <select name="category"><option value="">Visos kategorijos</option>
+    {% for c in categories %}<option {% if c == filters.category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+  <input type="search" name="q" value="{{ filters.q }}" placeholder="Paieška">
+  <button type="submit">Filtruoti</button>
+</form>
+
+<div class="table-wrap">
+<table class="tx">
+  <tr><th>Data</th><th>Gavėjas / aprašymas</th><th>Sąskaita</th><th class="num">Suma</th><th>Tipas ir kategorija</th></tr>
+  {% for t in rows %}
+  <tr class="{{ t['kind'] }}">
+    <td>{{ t['date'] }}{% if t['date'] != t['booking_date'] %}<br><small title="Nurašymo data">nur. {{ t['booking_date'] }}</small>{% endif %}</td>
+    <td><b>{{ t['counterparty'] or '—' }}</b><br><small>{{ t['description'] }}</small>
+      {% if t['reason'] %}<br><small class="reason">{{ t['reason'] }}</small>{% endif %}</td>
+    <td><small>{{ t['account_label'] }}{% if t['owner'] %}<br>{{ t['owner'] }}{% endif %}</small></td>
+    <td class="num {{ 'pos' if t['amount'] > 0 else 'neg' }}">{{ t['amount']|eur }}</td>
+    <td>
+      <form method="post" action="{{ url_for('update_transaction', tx_id=t['id']) }}" class="edit">
+        <input type="hidden" name="back" value="{{ request.full_path }}">
+        <select name="kind">{% for k, label in KIND_LABELS.items() %}<option value="{{ k }}" {% if k == t['kind'] %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <select name="category">{% for c in categories %}<option {% if c == t['category'] %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+        <input name="new_category" placeholder="nauja kategorija" size="12">
+        <label title="Taikyti visiems šio gavėjo sandoriams"><input type="checkbox" name="remember"> visada</label>
+        <button type="submit">✓</button>
+      </form>
+      {% if t['locked'] %}
+      <form method="post" action="{{ url_for('unlock_transaction', tx_id=t['id']) }}" class="inline">
+        <input type="hidden" name="back" value="{{ request.full_path }}">
+        <button type="submit" class="link">atšaukti rankinį pakeitimą</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">Sandorių nerasta.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

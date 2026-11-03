@@ -1,0 +1,8 @@
+"Sąskaitos Nr.","","Data","Gavėjas","Paaiškinimai","Suma","Valiuta","D/K","Įrašo Nr.","Kodas","Įmokos kodas","Dok. Nr.","Kliento kodas mokėtojo IS","Kliento kodas","Pradinis mokėtojas","Galutinis gavėjas",
+"LT000000000000000001","10","2026-10-01","","Likutis pradžiai","500.00","EUR","K","","AS","","",
+"LT000000000000000001","20","2026-10-01","MAXIMA/X-020 MAXIMA","PIRKINYS 554980******0000 2026.09.02 21.76 EUR (201215) MAXIMA/X-020 MAXIMA    00195 PALANGA      ","21.76","EUR","D","1001","K","","","",
+"LT000000000000000001","20","2026-10-02","UAB Wolt LT LT-01108 Vilnius","PIRKINYS 554980******0000 2026.09.05 62.39 EUR (464335) UAB Wolt LT","62.39","EUR","D","1002","K","","","",
+"LT000000000000000001","20","2026-10-03","JONAS JONAITIS","Kredito padengimas","84.15","EUR","K","1003","MK","","","",
+"LT000000000000000001","20","2026-10-04","PARDUOTUVE","GRĄŽINIMAS 554980******0000 2026.09.20 5.00 EUR","5.00","EUR","K","1004","K","","","",
+"LT000000000000000001","82","2026-10-07","","Apyvarta","84.15","EUR","D","","K2","","",
+"LT000000000000000001","86","2026-10-07","","Likutis pabaigai","415.85","EUR","K","","LS","","",
