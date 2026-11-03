@@ -16,6 +16,11 @@ python app.py
 
 Atidarykite <http://127.0.0.1:5000>.
 
+### Greitas paleidimas Windows
+
+Dukart spustelėkite `start.bat` (pirmą kartą pats įdiegs viską ir atidarys naršyklę).
+Telefonui naudokite `start-telefonui.bat`.
+
 ### Atidarymas telefonu
 
 Kompiuteryje ir telefone turi būti tas pats namų Wi-Fi.
