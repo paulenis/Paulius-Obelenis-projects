@@ -45,3 +45,5 @@ button.link { background: none; border: 0; color: var(--accent); padding: 0; tex
 .flash { padding: 10px 14px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--line); background: var(--card); }
 .flash.ok { border-color: var(--pos); } .flash.error { border-color: var(--neg); } .flash.info { border-color: var(--accent); }
 code { font-size: 13px; }
+button.danger, button.link.danger { color: var(--neg); }
+button.danger-btn { background: var(--neg); border-color: var(--neg); }

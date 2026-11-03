@@ -88,3 +88,25 @@ def test_user_rule_overrides_builtin(conn):
     conn.execute("INSERT INTO rules(pattern, kind, category) VALUES ('ERGO', 'expense', 'Gyvybės draudimas')")
     import_transactions(conn, load("current.csv"))
     assert kinds(conn)["2003"] == (EXPENSE, "Gyvybės draudimas")
+
+
+def test_delete_account_and_all(tmp_path, monkeypatch):
+    import app as app_module
+    monkeypatch.setattr(app_module, "DB_PATH", tmp_path / "web.db")
+    client = app_module.app.test_client()
+    for name in ("card.csv", "current.csv"):
+        import io
+        client.post("/import", data={"files": (io.BytesIO((FIXTURES / name).read_bytes()), name)},
+                    content_type="multipart/form-data")
+    with app_module.app.app_context():
+        conn = app_module.get_db()
+        assert conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] > 0
+    client.post("/settings", data={"action": "delete_account", "iban": "LT000000000000000001"})
+    with app_module.app.app_context():
+        conn = app_module.get_db()
+        assert conn.execute("SELECT COUNT(*) FROM transactions WHERE account = 'LT000000000000000001'").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] > 0
+    client.post("/settings", data={"action": "delete_all"})
+    with app_module.app.app_context():
+        conn = app_module.get_db()
+        assert conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 0

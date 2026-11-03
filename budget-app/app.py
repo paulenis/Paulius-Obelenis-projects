@@ -228,11 +228,18 @@ def settings():
                     "INSERT INTO rules(pattern, kind, category) VALUES (?, ?, ?)",
                     (pattern, kind, category),
                 )
+        elif action == "delete_account":
+            iban = request.form.get("iban", "")
+            conn.execute("DELETE FROM transactions WHERE account = ?", (iban,))
+            conn.execute("DELETE FROM accounts WHERE iban = ?", (iban,))
+        elif action == "delete_all":
+            conn.execute("DELETE FROM transactions")
+            conn.execute("DELETE FROM accounts")
         elif action == "delete_rule":
             conn.execute("DELETE FROM rules WHERE id = ?", (request.form.get("rule_id"),))
         reclassify_all(conn)
         conn.commit()
-        flash("Išsaugota.", "ok")
+        flash("Ištrinta." if action.startswith("delete_") else "Išsaugota.", "ok")
         return redirect(url_for("settings"))
 
     return render_template(

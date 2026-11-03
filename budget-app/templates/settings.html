@@ -20,7 +20,7 @@
     <input type="hidden" name="action" value="accounts">
     <div class="table-wrap">
     <table>
-      <tr><th>IBAN</th><th>Pavadinimas</th><th>Savininkas</th><th>Tipas</th><th class="num">Sandorių</th></tr>
+      <tr><th>IBAN</th><th>Pavadinimas</th><th>Savininkas</th><th>Tipas</th><th class="num">Sandorių</th><th></th></tr>
       {% for a in accounts %}
       <tr>
         <td><code>{{ a['iban'] }}</code></td>
@@ -32,12 +32,20 @@
           <option value="bendra" {% if a['kind'] == 'bendra' %}selected{% endif %}>Bendra</option>
         </select></td>
         <td class="num">{{ a['n'] }}</td>
+        <td><button type="submit" form="del-{{ loop.index }}" class="link danger">ištrinti sąskaitą ir sandorius</button></td>
       </tr>
       {% endfor %}
     </table>
     </div>
     <button type="submit">Išsaugoti</button>
   </form>
+  {% for a in accounts %}
+  <form method="post" id="del-{{ loop.index }}"
+        onsubmit="return confirm('Ištrinti sąskaitą {{ a['iban'] }} ir visus jos sandorius ({{ a['n'] }})? Veiksmo atšaukti negalima.')">
+    <input type="hidden" name="action" value="delete_account">
+    <input type="hidden" name="iban" value="{{ a['iban'] }}">
+  </form>
+  {% endfor %}
   {% else %}<p>Sąskaitos atsiras įkėlus pirmą išrašą.</p>{% endif %}
 </section>
 
@@ -65,4 +73,15 @@
   <form method="post" id="add-rule"><input type="hidden" name="action" value="add_rule"></form>
   <datalist id="categories">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
 </section>
+
+{% if accounts %}
+<section class="card">
+  <h2>Pavojinga zona</h2>
+  <p class="muted">Ištrina visas sąskaitas ir sandorius. Taisyklės ir šeimos nariai lieka.</p>
+  <form method="post" onsubmit="return confirm('Ištrinti VISUS sandorius ir sąskaitas? Veiksmo atšaukti negalima.')">
+    <input type="hidden" name="action" value="delete_all">
+    <button type="submit" class="danger-btn">Ištrinti visus duomenis</button>
+  </form>
+</section>
+{% endif %}
 {% endblock %}
